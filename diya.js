@@ -1080,9 +1080,9 @@ const nextTrackBtn   = document.getElementById('nextTrackBtn');
 
 // Tracks configured for audio/ folder (.1.mp3, 1.mp3, 2.mp3, 3.mp3)
 const TRACKS = [
-  { id: 1, name: '1.mp3 — Divine Classical Flute', src: 'audio/1.mp3', alt: 'audio/.1.mp3' },
-  { id: 2, name: '2.mp3 — Festive Temple Santoor', src: 'audio/2.mp3', alt: 'audio/.2.mp3' },
-  { id: 3, name: '3.mp3 — Sacred Raag & Tanpura', src: 'audio/3.mp3', alt: 'audio/.3.mp3' },
+  { id: 1, name: 'Bhajan', label: 'Bhajan 1', src: 'audio/1.mp3', alt: 'audio/.1.mp3' },
+  { id: 2, name: 'Bhajan', label: 'Bhajan 2', src: 'audio/2.mp3', alt: 'audio/.2.mp3' },
+  { id: 3, name: 'Bhajan', label: 'Bhajan 3', src: 'audio/3.mp3', alt: 'audio/.3.mp3' },
 ];
 
 let currentTrackIdx = 0;
@@ -1145,7 +1145,7 @@ function loadTrack(idx, autoPlay = true) {
 
   if (musicTrackName) {
     musicTrackName.textContent = track.name;
-    musicTrackName.title = track.name;
+    musicTrackName.title = track.label || track.name;
   }
 
   stopSynthDrone();
