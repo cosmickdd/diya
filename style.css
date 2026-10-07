@@ -1,0 +1,302 @@
+/* =============================================
+   STYLE.CSS — Sacred Interactive Diya Experience
+   ============================================= */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-deep: #0a0604;
+  --bg-dark: #120905;
+  --gold-pure: #f5c842;
+  --gold-rich: #e8a835;
+  --amber: #c97b20;
+  --vermilion: #e54b17;
+  --maroon: #4a1205;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-display: 'Cinzel', serif;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-deep);
+  font-family: var(--font-serif);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 52%, #190c06 0%, #0d0603 60%, #050302 100%);
+}
+
+/* Dynamic Ambient Lighting Canvas */
+#bgCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Diya Scene Container — Exact 1536:1024 Aspect Ratio */
+#diyaScene {
+  position: relative;
+  z-index: 2;
+  width: min(88vw, 680px);
+  aspect-ratio: 1536 / 1024;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+  overflow: visible;
+  transition: transform 0.15s ease-out;
+}
+
+#diyaScene:active {
+  transform: scale(0.995);
+}
+
+/* Floor Light Spill beneath Diya */
+#lightSpill {
+  position: absolute;
+  bottom: -15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 35%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    rgba(235, 120, 25, 0.28) 0%,
+    rgba(180, 75, 12, 0.12) 48%,
+    transparent 75%);
+  filter: blur(25px);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.8s ease-out;
+}
+
+/* Diya Terracotta PNG Base */
+#diyaImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  z-index: 3;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 28px 45px rgba(0, 0, 0, 0.88));
+}
+
+/* Interactive Flame & Atmosphere SVG (Top Layer) */
+#flameSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* UI Overlay */
+#ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3.5vh 2rem 5vh 2rem;
+}
+
+/* Instruction Text */
+.instruction {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(1.05rem, 2.4vw, 1.45rem);
+  color: rgba(245, 200, 75, 0.92);
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-shadow: 0 0 25px rgba(230, 130, 20, 0.7), 0 2px 4px rgba(0,0,0,0.8);
+  opacity: 1;
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  margin-top: auto;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 1.4rem;
+  border-radius: 30px;
+  background: rgba(18, 9, 4, 0.45);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(232, 168, 53, 0.18);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.instruction.fade {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+/* Controls Bar at bottom */
+.controlsBar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  pointer-events: auto;
+}
+
+/* Glassmorphic Control Buttons */
+.glassBtn {
+  background: linear-gradient(135deg, rgba(45, 22, 10, 0.7), rgba(25, 12, 5, 0.85));
+  border: 1px solid rgba(232, 168, 53, 0.35);
+  color: #ffdf85;
+  padding: 0.65rem 1.6rem;
+  border-radius: 50px;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 230, 150, 0.2);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glassBtn:hover {
+  background: linear-gradient(135deg, rgba(65, 32, 14, 0.85), rgba(35, 16, 7, 0.95));
+  border-color: rgba(245, 200, 66, 0.6);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(220, 110, 15, 0.35), inset 0 1px 0 rgba(255, 240, 180, 0.3);
+}
+
+.glassBtn:active {
+  transform: translateY(0);
+}
+
+.btnIcon {
+  color: var(--gold-pure);
+  font-size: 0.95rem;
+  display: inline-block;
+  animation: pulseGentle 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseGentle {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.18); }
+}
+
+/* Motion Permission Modal */
+#motionPermissionOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(8, 4, 2, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+
+#motionPermissionOverlay.hidden {
+  display: none;
+}
+
+#motionPermissionCard {
+  text-align: center;
+  padding: 2.5rem 2rem;
+  border: 1px solid rgba(232, 168, 53, 0.35);
+  border-radius: 20px;
+  background: linear-gradient(165deg, rgba(28, 14, 6, 0.98), rgba(16, 8, 3, 0.98));
+  box-shadow: 0 0 60px rgba(200, 100, 10, 0.25), inset 0 0 30px rgba(0, 0, 0, 0.6);
+  max-width: 350px;
+  width: 90%;
+}
+
+.permissionIcon {
+  font-size: 2.2rem;
+  color: var(--gold-pure);
+  margin-bottom: 1rem;
+  animation: pulseGentle 2s ease-in-out infinite;
+}
+
+#motionPermissionCard h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.35rem;
+  color: var(--gold-rich);
+  margin-bottom: 0.65rem;
+  letter-spacing: 0.08em;
+}
+
+#motionPermissionCard p {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-style: italic;
+  color: rgba(235, 185, 95, 0.82);
+  font-size: 1.05rem;
+  margin-bottom: 1.8rem;
+  line-height: 1.55;
+}
+
+#enableMotionBtn {
+  background: linear-gradient(135deg, #c97b20, #f5c842, #c97b20);
+  color: #100602;
+  border: none;
+  padding: 0.8rem 2.2rem;
+  border-radius: 50px;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px rgba(220, 120, 15, 0.45);
+}
+
+#enableMotionBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(240, 140, 20, 0.65);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #diyaScene {
+    width: 92vw;
+  }
+  #ui {
+    padding-bottom: 4vh;
+  }
+}
+
+@media (min-width: 1200px) {
+  #diyaScene {
+    width: 660px;
+  }
+}

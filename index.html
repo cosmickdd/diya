@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Diya - Sacred Light</title>
+  <meta name="description" content="An interactive physics-based digital diya. Tap to ignite, tilt or swipe to move the flame." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Ambient Canvas (Pulsing room lighting) -->
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- Diya Scene Container (1536x1024 aspect ratio) -->
+    <div id="diyaScene" role="button" aria-label="Interactive Diya" tabindex="0">
+      <!-- Ground light spill beneath diya -->
+      <div id="lightSpill"></div>
+
+      <!-- Diya Base PNG (Layer 1) -->
+      <img id="diyaImg" src="diya.png" alt="Ornate Indian Diya" draggable="false" />
+
+      <!-- Interactive Flame & Effects SVG (Layer 2 - Above PNG) -->
+      <svg id="flameSvg" viewBox="0 0 1536 1024" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Outer Flame Main Gradient -->
+          <linearGradient id="outerFlameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#e56617" />
+            <stop offset="12%" stop-color="#f57608" />
+            <stop offset="28%" stop-color="#fc9b08" />
+            <stop offset="46%" stop-color="#ffbe03" />
+            <stop offset="68%" stop-color="#ffd525" />
+            <stop offset="88%" stop-color="#ffe65e" />
+            <stop offset="100%" stop-color="rgba(255, 175, 40, 0.72)" />
+          </linearGradient>
+
+          <!-- Outer Flame Translucent Aura Gradient -->
+          <linearGradient id="flameAuraGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="rgba(229, 85, 12, 0.80)" />
+            <stop offset="35%" stop-color="rgba(255, 140, 18, 0.70)" />
+            <stop offset="70%" stop-color="rgba(255, 195, 38, 0.50)" />
+            <stop offset="100%" stop-color="rgba(255, 150, 20, 0.10)" />
+          </linearGradient>
+
+          <!-- Inner Golden Petal / Leaf Gradient -->
+          <linearGradient id="innerPetalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#ff9e06" />
+            <stop offset="25%" stop-color="#ffcd18" />
+            <stop offset="55%" stop-color="#fff04d" />
+            <stop offset="82%" stop-color="#fffca8" />
+            <stop offset="100%" stop-color="#ffffea" />
+          </linearGradient>
+
+          <!-- Central Radiant Beam Gradient -->
+          <linearGradient id="centralBeamGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="rgba(255, 190, 40, 0)" />
+            <stop offset="30%" stop-color="rgba(255, 235, 110, 0.45)" />
+            <stop offset="70%" stop-color="rgba(255, 255, 190, 0.85)" />
+            <stop offset="100%" stop-color="rgba(255, 255, 240, 0.98)" />
+          </linearGradient>
+
+          <!-- White-Hot Core Gradient -->
+          <radialGradient id="hotCoreGrad" cx="50%" cy="60%" r="55%">
+            <stop offset="0%" stop-color="#ffffff" />
+            <stop offset="45%" stop-color="rgba(255, 255, 225, 0.95)" />
+            <stop offset="75%" stop-color="rgba(255, 235, 120, 0.60)" />
+            <stop offset="100%" stop-color="rgba(255, 180, 30, 0)" />
+          </radialGradient>
+
+          <!-- Ambient Atmosphere Radial Glow Behind Flame -->
+          <radialGradient id="ambientGlowGrad" cx="50%" cy="45%" r="50%">
+            <stop offset="0%" stop-color="rgba(255, 145, 20, 0.65)" />
+            <stop offset="35%" stop-color="rgba(245, 105, 10, 0.38)" />
+            <stop offset="70%" stop-color="rgba(190, 55, 5, 0.12)" />
+            <stop offset="100%" stop-color="rgba(100, 20, 0, 0)" />
+          </radialGradient>
+
+          <!-- Rim Illumination Radial Glow -->
+          <radialGradient id="rimIllumGrad" cx="50%" cy="30%" r="55%">
+            <stop offset="0%" stop-color="rgba(255, 180, 40, 0.55)" />
+            <stop offset="45%" stop-color="rgba(230, 110, 15, 0.22)" />
+            <stop offset="80%" stop-color="rgba(160, 50, 5, 0.06)" />
+            <stop offset="100%" stop-color="rgba(80, 20, 0, 0)" />
+          </radialGradient>
+
+          <!-- Oil Pool Reflection Gradient -->
+          <radialGradient id="oilReflectionGrad" cx="50%" cy="35%" r="55%">
+            <stop offset="0%" stop-color="rgba(255, 225, 90, 0.70)" />
+            <stop offset="35%" stop-color="rgba(255, 155, 25, 0.45)" />
+            <stop offset="70%" stop-color="rgba(210, 75, 10, 0.18)" />
+            <stop offset="100%" stop-color="rgba(120, 30, 5, 0)" />
+          </radialGradient>
+
+          <!-- Wick Ember Gradient -->
+          <radialGradient id="wickEmberGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffffff" />
+            <stop offset="35%" stop-color="#ffb830" />
+            <stop offset="70%" stop-color="#ff3e00" />
+            <stop offset="100%" stop-color="rgba(180, 20, 0, 0)" />
+          </radialGradient>
+
+          <!-- Filters -->
+          <filter id="auraBlur" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="35" />
+          </filter>
+
+          <filter id="sheathBlur" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="7" />
+          </filter>
+
+          <filter id="oilBlur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="9" />
+          </filter>
+
+          <filter id="emberGlow" x="-200%" y="-200%" width="500%" height="500%">
+            <feGaussianBlur stdDeviation="3.5" result="blur"/>
+            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+          </filter>
+        </defs>
+
+        <!-- 1. Ambient Glow Behind Flame -->
+        <ellipse id="flameAmbientAura" cx="768" cy="220" rx="380" ry="460"
+          fill="url(#ambientGlowGrad)" filter="url(#auraBlur)" opacity="0" />
+
+        <!-- 2. Rim & Diya Bowl Illumination -->
+        <ellipse id="rimIllumination" cx="768" cy="420" rx="370" ry="170"
+          fill="url(#rimIllumGrad)" filter="url(#oilBlur)" opacity="0" />
+
+        <!-- 3. Oil Surface Flame Reflection -->
+        <ellipse id="oilReflection" cx="768" cy="465" rx="160" ry="45"
+          fill="url(#oilReflectionGrad)" filter="url(#oilBlur)" opacity="0" />
+
+        <!-- 4. Oil Liquid Ripples Container -->
+        <g id="oilRipples"></g>
+
+        <!-- 5. Wick Ember -->
+        <circle id="wickEmber" cx="767" cy="415" r="0" fill="url(#wickEmberGrad)" opacity="0" />
+
+        <!-- 6. THE FLAME GROUP (Renders precisely over the wick & back rim) -->
+        <g id="flameGroup" opacity="0">
+          <!-- Translucent Outer Sheath / Aura -->
+          <path id="flameAura" fill="url(#flameAuraGrad)" filter="url(#sheathBlur)" />
+
+          <!-- Main Teardrop Flame Body -->
+          <path id="flameBody" fill="url(#outerFlameGrad)" />
+
+          <!-- Left Translucent Wing (3D Curved Sheen from Reference) -->
+          <path id="flameWingLeft" fill="rgba(255, 225, 120, 0.38)" />
+
+          <!-- Right Translucent Wing (3D Curved Sheen from Reference) -->
+          <path id="flameWingRight" fill="rgba(255, 195, 75, 0.32)" />
+
+          <!-- Central Radiant Light Column -->
+          <path id="centralBeam" fill="url(#centralBeamGrad)" />
+
+          <!-- Inner Golden Leaf/Petal (Reference Feature) -->
+          <path id="innerPetal" fill="url(#innerPetalGrad)" stroke="#e68808" stroke-width="1.8" />
+
+          <!-- Inner Leaf Highlight Sheen -->
+          <path id="innerPetalSheen" fill="rgba(255, 255, 235, 0.45)" />
+
+          <!-- White-Hot Core Flamelet -->
+          <path id="hotCore" fill="url(#hotCoreGrad)" />
+        </g>
+
+        <!-- 7. Floating Ember Particles -->
+        <g id="emberGroup"></g>
+
+        <!-- 8. Smoke Particles -->
+        <g id="smokeGroup"></g>
+      </svg>
+    </div><!-- /diyaScene -->
+
+    <!-- Elegant UI Controls & Instructions -->
+    <div id="ui">
+      <div id="instruction" class="instruction">
+        <span id="instructionText">Tap the diya to light the flame</span>
+      </div>
+
+      <div class="controlsBar">
+        <button id="toggleFlameBtn" class="glassBtn" title="Toggle Flame">
+          <span class="btnIcon" id="btnIcon">✦</span>
+          <span class="btnLabel" id="btnLabel">Extinguish</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Motion Permission Modal (Mobile/iOS) -->
+    <div id="motionPermissionOverlay" class="hidden">
+      <div id="motionPermissionCard">
+        <div class="permissionIcon">✦</div>
+        <h2>Enable Gyroscope</h2>
+        <p>Tilt your phone to watch the sacred flame dance and respond to gravity.</p>
+        <button id="enableMotionBtn">Enable Motion</button>
+      </div>
+    </div>
+  </div><!-- /app -->
+
+  <script src="config.js"></script>
+  <script src="physics.js"></script>
+  <script src="diya.js"></script>
+</body>
+</html>
