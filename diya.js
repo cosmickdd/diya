@@ -128,12 +128,9 @@ function init() {
   // Draw initial unlit background
   drawBackground(0);
 
-  // Auto-ignite on load after gentle 500ms delay so user immediately sees the glorious flame
-  setTimeout(() => {
-    if (!state.lit && !state.igniting) {
-      ignite();
-    }
-  }, 500);
+  // Keep diya unlit / off in the beginning — user must light it
+  showInstruction('Tap the diya to light the flame');
+  updateButtonUI();
 
   requestAnimationFrame(loop);
 }
@@ -768,6 +765,11 @@ function extinguish() {
   state.igniting = false;
 
   updateButtonUI();
+
+  // Turn off music when diya flame gets extinguished
+  if (typeof pauseMusic === 'function' && isMusicPlaying) {
+    pauseMusic();
+  }
 }
 
 function toggleFlame() {
@@ -1169,7 +1171,11 @@ function toggleMusic() {
   if (isMusicPlaying) {
     pauseMusic();
   } else {
-    playMusic();
+    if (!state.lit) {
+      ignite();
+    } else {
+      playMusic();
+    }
   }
 }
 
