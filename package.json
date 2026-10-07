@@ -1,0 +1,25 @@
+{
+  "name": "diya",
+  "version": "1.0.0",
+  "description": "Realistic Interactive Digital Diya with Gyroscope Physics and Fluid Flame Dynamics",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cosmickdd/diya.git"
+  },
+  "keywords": [
+    "diya",
+    "interactive",
+    "physics",
+    "gyroscope",
+    "svg",
+    "canvas",
+    "vercel"
+  ],
+  "author": "cosmickdd",
+  "license": "MIT"
+}

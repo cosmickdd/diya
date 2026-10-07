@@ -666,6 +666,7 @@ function fadeInstruction() {
 function setupEvents() {
   // Tap anywhere on scene or app to light or create ripples
   diyaScene.addEventListener('click', (e) => {
+    tryAutoEnableSensors();
     if (!state.lit) {
       ignite();
     } else {
@@ -678,6 +679,7 @@ function setupEvents() {
   if (toggleFlameBtn) {
     toggleFlameBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      tryAutoEnableSensors();
       toggleFlame();
     });
   }
@@ -747,21 +749,19 @@ function setupEvents() {
 }
 
 // =============================================
-// DEVICE MOTION & GYROSCOPE (MOBILE)
+// DEVICE MOTION & GYROSCOPE (MOBILE & DESKTOP)
 // =============================================
+let lastGamma = 0;
+let lastBeta = 45;
+let lastAccel = { x: 0, y: 0, z: 0 };
+
 function checkDeviceOrientation() {
   if (typeof DeviceOrientationEvent === 'undefined') return;
 
-  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-    // iOS 13+ permission workflow
-    setTimeout(() => {
-      if (!state.motionPermissionGranted && motionOverlay) {
-        motionOverlay.classList.remove('hidden');
-      }
-    }, 2000);
-  } else {
-    // Standard Android / modern browsers
+  // On modern Android and standard browsers, listeners work directly
+  if (typeof DeviceOrientationEvent.requestPermission !== 'function') {
     bindOrientationListener();
+    bindMotionListener();
   }
 }
 
@@ -772,6 +772,7 @@ function requestMotionPermission() {
         if (res === 'granted') {
           state.motionPermissionGranted = true;
           bindOrientationListener();
+          bindMotionListener();
         }
         if (motionOverlay) motionOverlay.classList.add('hidden');
       })
@@ -780,31 +781,112 @@ function requestMotionPermission() {
       });
   } else {
     bindOrientationListener();
+    bindMotionListener();
     if (motionOverlay) motionOverlay.classList.add('hidden');
   }
 }
 
-let lastGamma = 0;
+// Seamlessly attempt sensor permission on first user tap
+function tryAutoEnableSensors() {
+  if (!state.hasDeviceOrientation) {
+    requestMotionPermission();
+  }
+}
 
 function bindOrientationListener() {
   state.hasDeviceOrientation = true;
+
   window.addEventListener('deviceorientation', (e) => {
-    const gamma = e.gamma || 0; // Left-Right tilt [-90..90]
-    const normGamma = Math.max(-1, Math.min(1, gamma / 40));
+    // 1. GAMMA: Left-Right phone tilt (-90 to +90 degrees)
+    // In physics, buoyant flame rises AGAINST gravity.
+    // When phone tilts right (gamma > 0), flame leans left (-gamma) to stay pointing up at sky!
+    const gamma = (e.gamma !== null && e.gamma !== undefined) ? e.gamma : 0;
+    
+    // Normal holding range is -45 to +45 deg
+    const clampedGamma = Math.max(-65, Math.min(65, gamma));
+    // Flame leans counter to tilt (buoyant updraft)
+    const leanDegrees = -clampedGamma * 0.75;
+    windX.setTarget(leanDegrees);
 
-    // Flame leans naturally counter to gravity
-    windX.setTarget(normGamma * 36);
+    // Liquid oil sloshes WITH gravity (opposite to flame!)
+    const oilSlosh = (clampedGamma / 45) * 22;
+    oilReflection.setAttribute('cx', (CX + oilSlosh).toString());
 
-    const dGamma = gamma - lastGamma;
+    // 2. BETA: Front-Back phone tilt (-180 to +180 degrees)
+    // Normal hand position is ~45-55 degrees
+    const beta = (e.beta !== null && e.beta !== undefined) ? e.beta : 50;
+    const deltaBeta = beta - 50; // deviation from standard handheld angle
+    
+    // Holding phone flat (looking down): flame spreads wider and slightly shorter
+    // Holding phone upright: flame stretches taller
+    const heightMod = 1.0 + Math.max(-0.25, Math.min(0.25, deltaBeta * 0.005));
+    flameScale.setTarget(state.lit ? heightMod : 0);
+
+    // Delta tracking for sudden tilt jerks
+    const dGamma = Math.abs(gamma - lastGamma);
     lastGamma = gamma;
+    lastBeta = beta;
 
-    // Sudden shake throws embers
-    if (Math.abs(dGamma) > 8 && state.lit && flameScale.current > 0.4) {
-      flameLeanX.impulse(dGamma * 1.4);
+    if (dGamma > 12 && state.lit && flameScale.current > 0.35) {
+      flameLeanX.impulse((gamma > lastGamma ? -1 : 1) * 18);
       spawnEmber(flameLeanX.current, flameScale.current);
     }
-  });
+  }, { passive: true });
 }
+
+function bindMotionListener() {
+  if (typeof DeviceMotionEvent === 'undefined') return;
+
+  window.addEventListener('devicemotion', (e) => {
+    // Accelerometer reading (linear acceleration or acceleration including gravity)
+    const accel = e.acceleration || e.accelerationIncludingGravity;
+    if (!accel) return;
+
+    const ax = accel.x || 0;
+    const ay = accel.y || 0;
+    const az = accel.z || 0;
+
+    // Movement delta (jerk)
+    const dx = ax - lastAccel.x;
+    const dy = ay - lastAccel.y;
+    const dz = az - lastAccel.z;
+    const mag = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    lastAccel = { x: ax, y: ay, z: az };
+
+    // Sudden phone move / gesture deflects flame with inertia
+    if (Math.abs(ax) > 2.0 && state.lit) {
+      // Flame lags behind movement direction
+      flameLeanX.impulse(-ax * 2.2);
+    }
+
+    // Moderate shake: throws floating embers!
+    if (mag > 14 && state.lit && flameScale.current > 0.3) {
+      flameLeanX.impulse((Math.random() - 0.5) * 25);
+      for (let i = 0; i < 2; i++) {
+        spawnEmber(flameLeanX.current, flameScale.current);
+      }
+    }
+
+    // Violent shake / rapid swing: blows out the flame with smoke!
+    if (mag > 32 && state.lit) {
+      extinguish();
+    }
+  }, { passive: true });
+}
+
+// Desktop Tilt Testing via Arrow Keys (Left / Right tilts flame)
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') {
+    windX.impulse(-14);
+  } else if (e.key === 'ArrowRight') {
+    windX.impulse(14);
+  } else if (e.key === 'ArrowUp') {
+    flameScale.impulse(0.15);
+  } else if (e.key === 'ArrowDown') {
+    flameScale.impulse(-0.15);
+  }
+});
 
 // Start
 window.addEventListener('DOMContentLoaded', init);
