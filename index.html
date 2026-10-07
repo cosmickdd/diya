@@ -15,10 +15,12 @@
     <!-- Ambient Canvas (Pulsing room lighting) -->
     <canvas id="bgCanvas"></canvas>
 
-    <!-- Diya Scene Container (1536x1024 aspect ratio) -->
-    <div id="diyaScene" role="button" aria-label="Interactive Diya" tabindex="0">
-      <!-- Ground light spill beneath diya -->
-      <div id="lightSpill"></div>
+    <!-- Main Column: Diya -> Scroll -> Button -->
+    <div id="stageContainer" class="stageContainer">
+      <!-- 1. The Diya -->
+      <div id="diyaScene" role="button" aria-label="Interactive Diya" tabindex="0">
+        <!-- Ground light spill beneath diya -->
+        <div id="lightSpill"></div>
 
       <!-- Diya Base PNG (Layer 1) -->
       <img id="diyaImg" src="diya.png" alt="Ornate Indian Diya" draggable="false" />
@@ -196,13 +198,62 @@
       </svg>
     </div><!-- /diyaScene -->
 
-    <!-- Elegant UI Controls & Instructions -->
+      <!-- 2. Realistic Manuscript Scroll (Initially Locked, Taps to Unroll) -->
+      <div id="realisticScroll" class="realisticScroll locked" role="region" aria-label="Festive Scroll Greeting">
+        <!-- Top Horizontal Wooden Roller -->
+        <div class="scrollDowel topDowel">
+          <div class="dowelFinial leftFinial"></div>
+          <div class="dowelWood"></div>
+          <div class="dowelFinial rightFinial"></div>
+        </div>
+
+        <!-- Parchment Sheet (Unrolls vertically on tap) -->
+        <div class="parchmentSheet">
+          <!-- Sealed / Locked Band -->
+          <div id="scrollLockedBand" class="sealedBand" title="Tap to unroll">
+            <div class="sealRibbon"></div>
+            <div class="waxSeal">
+              <span class="sealCaption">Tap to unroll</span>
+            </div>
+          </div>
+
+          <!-- Unrolled Content (Revealed after tap) -->
+          <div class="scrollMessageBody">
+            <div class="scrollTopOrnament">Shubh Deepavali</div>
+            <div id="scrollSenderName" class="scrollSenderName">With Sacred Blessings</div>
+            <div id="scrollMessageText" class="scrollMessageText">May the divine light of this sacred diya illuminate your life with peace, health and prosperity.</div>
+            
+            <div class="scrollControls">
+              <button id="openCustomizeBtn" class="scrollActionLink">Customize</button>
+              <button id="openShareBtn" class="scrollActionLink primary">Share</button>
+              <button id="rollUpBtn" class="scrollActionLink rollUp">Roll up</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Horizontal Wooden Roller -->
+        <div class="scrollDowel bottomDowel">
+          <div class="dowelFinial leftFinial"></div>
+          <div class="dowelWood"></div>
+          <div class="dowelFinial rightFinial"></div>
+        </div>
+      </div>
+
+      <!-- 3. Bottom Button (Beneath Scroll) -->
+      <div class="controlsBar">
+        <button id="toggleFlameBtn" class="glassBtn" title="Toggle Flame">
+          <span class="btnLabel" id="btnLabel">Light Diya</span>
+        </button>
+      </div>
+    </div><!-- /stageContainer -->
+
+    <!-- Top UI Overlay: Ambient Music & Top Instruction -->
     <div id="ui">
-      <!-- Glassmorphic Ambient Music Player (Top Corner) -->
-      <div id="musicWidget" class="glassMusicWidget" aria-label="Sacred Music Player">
+      <!-- Ambient Music Player (Top Corner) -->
+      <div id="musicWidget" class="glassMusicWidget" aria-label="Music Player">
         <audio id="bgAudio" preload="auto"></audio>
         
-        <button id="musicToggleBtn" class="musicPlayBtn" title="Play / Pause Ambient Music" aria-label="Toggle Music">
+        <button id="musicToggleBtn" class="musicPlayBtn" title="Play / Pause Music" aria-label="Toggle Music">
           <span id="musicPlayIcon">▶</span>
         </button>
 
@@ -211,7 +262,6 @@
             <span class="musicNoteIcon">♫</span>
             <span id="musicTrackName" class="musicTrackName">Bhajan</span>
           </div>
-          <!-- Animated Sound Equalizer Waves -->
           <div id="equalizerWave" class="equalizerWave paused">
             <span class="eqBar"></span>
             <span class="eqBar"></span>
@@ -229,22 +279,60 @@
       <div id="instruction" class="instruction">
         <span id="instructionText">Tap the diya to light the flame</span>
       </div>
-
-      <div class="controlsBar">
-        <button id="toggleFlameBtn" class="glassBtn" title="Toggle Flame">
-          <span class="btnIcon" id="btnIcon">✦</span>
-          <span class="btnLabel" id="btnLabel">Extinguish</span>
-        </button>
-      </div>
     </div>
 
     <!-- Motion Permission Modal (Mobile/iOS) -->
     <div id="motionPermissionOverlay" class="hidden">
       <div id="motionPermissionCard">
-        <div class="permissionIcon">✦</div>
-        <h2>Enable Gyroscope</h2>
-        <p>Tilt your phone to watch the sacred flame dance and respond to gravity.</p>
+        <h2>Enable Motion</h2>
+        <p>Tilt your phone to watch the flame respond to movement and gravity.</p>
         <button id="enableMotionBtn">Enable Motion</button>
+      </div>
+    </div>
+
+    <!-- Festive Greeting Dialog -->
+    <div id="shareModalOverlay" class="shareModalOverlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="shareModalCard">
+        <button id="closeModalBtn" class="modalCloseBtn" aria-label="Close">✕</button>
+
+        <div class="modalHeader">
+          <h2 id="modalTitle">Festive Greeting</h2>
+          <p class="modalSubtitle">Personalize your name and blessing to share with loved ones.</p>
+        </div>
+
+        <div class="modalForm">
+          <div class="formField">
+            <label for="inputSenderName">Your Name</label>
+            <input type="text" id="inputSenderName" maxlength="45" placeholder="Enter your name" autocomplete="off" />
+          </div>
+
+          <div class="formField">
+            <label for="inputMessageText">Blessing</label>
+            <textarea id="inputMessageText" rows="3" maxlength="180" placeholder="Write your festive blessing..."></textarea>
+          </div>
+
+          <!-- Quick Festive Presets -->
+          <div class="presetsContainer">
+            <span class="presetsLabel">Quick Greetings:</span>
+            <div class="presetsList">
+              <button type="button" class="presetChip" data-msg="May the divine light illuminate your path with peace, health and prosperity.">Peace and Prosperity</button>
+              <button type="button" class="presetChip" data-msg="Wishing you and your family a joyous and blessed festive season.">Festive Season</button>
+              <button type="button" class="presetChip" data-msg="May this sacred flame remove all obstacles and bring happiness to your home.">Happiness and Joy</button>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="modalActionsRow">
+            <button type="button" id="applyScrollBtn" class="modalBtn primary">Update</button>
+            <button type="button" id="copyShareLinkBtn" class="modalBtn">Copy Link</button>
+            <button type="button" id="whatsappShareBtn" class="modalBtn whatsapp">WhatsApp</button>
+          </div>
+
+          <!-- Share Notification Toast -->
+          <div id="modalToast" class="modalToast hidden">
+            <span id="modalToastMsg">Link copied to clipboard.</span>
+          </div>
+        </div>
       </div>
     </div>
   </div><!-- /app -->

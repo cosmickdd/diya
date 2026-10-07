@@ -130,33 +130,38 @@ html, body {
   padding: 3.5vh 2rem 5vh 2rem;
 }
 
-/* Instruction Text */
+/* Instruction Text (Top Center Banner) */
 .instruction {
+  position: absolute;
+  top: 1.8rem;
+  left: 50%;
+  transform: translateX(-50%);
   font-family: var(--font-serif);
   font-weight: 300;
   font-style: italic;
-  font-size: clamp(1.05rem, 2.4vw, 1.45rem);
+  font-size: clamp(0.95rem, 2vw, 1.25rem);
   color: rgba(245, 200, 75, 0.92);
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-align: center;
   text-shadow: 0 0 25px rgba(230, 130, 20, 0.7), 0 2px 4px rgba(0,0,0,0.8);
   opacity: 1;
-  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s ease;
   pointer-events: none;
-  margin-top: auto;
-  margin-bottom: 1.5rem;
-  padding: 0.5rem 1.4rem;
+  padding: 0.45rem 1.4rem;
   border-radius: 30px;
-  background: rgba(18, 9, 4, 0.45);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(232, 168, 53, 0.18);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  background: rgba(18, 9, 4, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(232, 168, 53, 0.22);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  white-space: nowrap;
+  z-index: 40;
 }
 
 .instruction.fade {
   opacity: 0;
-  transform: translateY(6px);
-  transition: opacity 0.8s ease, transform 0.8s ease;
+  transform: translateX(-50%) translateY(-8px);
+  pointer-events: none;
 }
 
 /* Controls Bar at bottom */
@@ -456,6 +461,12 @@ html, body {
   #ui {
     padding-bottom: 4vh;
   }
+  .instruction {
+    top: 4.2rem;
+    font-size: 0.85rem;
+    padding: 0.35rem 1rem;
+    max-width: 85vw;
+  }
   .glassMusicWidget {
     top: 1rem;
     right: 1rem;
@@ -483,5 +494,577 @@ html, body {
 @media (min-width: 1200px) {
   #diyaScene {
     width: 660px;
+  }
+}
+
+/* =============================================
+   MAIN STAGE CONTAINER: DIYA -> SCROLL -> BUTTON
+   ============================================= */
+.stageContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  padding-top: 1.5rem;
+  padding-bottom: 2rem;
+  gap: 0.9rem;
+  pointer-events: none;
+}
+
+.stageContainer > * {
+  pointer-events: auto;
+}
+
+/* =============================================
+   REALISTIC MANUSCRIPT PARCHMENT SCROLL
+   (Based on classical wooden-roller manuscript reference)
+   ============================================= */
+.realisticScroll {
+  width: min(88vw, 420px);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.3s ease, filter 0.4s ease;
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.85));
+  margin-top: -1.2rem;
+}
+
+.realisticScroll:hover {
+  transform: translateY(-2px);
+}
+
+/* Horizontal Wooden Dowel Rollers (Top & Bottom) */
+.scrollDowel {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 6;
+}
+
+.topDowel {
+  margin-bottom: -5px;
+}
+
+.bottomDowel {
+  margin-top: -5px;
+  transition: transform 0.75s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.dowelWood {
+  flex: 1;
+  height: 20px;
+  border-radius: 6px;
+  background: linear-gradient(180deg,
+    #2c1505 0%,
+    #5e3514 16%,
+    #936032 40%,
+    #b47d48 52%,
+    #71401a 76%,
+    #251003 100%);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.75),
+              inset 0 1px 1px rgba(255, 230, 180, 0.35),
+              inset 0 -1px 2px rgba(0, 0, 0, 0.5);
+  border-left: 3px solid #1a0b02;
+  border-right: 3px solid #1a0b02;
+}
+
+.dowelFinial {
+  width: 22px;
+  height: 24px;
+  background: radial-gradient(circle at 35% 35%,
+    #cfa068 0%,
+    #8c5728 45%,
+    #4e2b0e 75%,
+    #221003 100%);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.8),
+              inset 0 1px 2px rgba(255, 220, 150, 0.45);
+  position: relative;
+}
+
+.dowelFinial.leftFinial {
+  border-radius: 50% 25% 25% 50%;
+  margin-right: -2px;
+}
+
+.dowelFinial.rightFinial {
+  border-radius: 25% 50% 50% 25%;
+  margin-left: -2px;
+}
+
+/* Aged Parchment Sheet */
+.parchmentSheet {
+  width: calc(100% - 36px);
+  background: linear-gradient(180deg,
+    #d4b680 0%,
+    #ead6ad 10%,
+    #f6ebd2 48%,
+    #ecdaa9 85%,
+    #cfaf74 100%);
+  box-shadow: inset 0 12px 14px -6px rgba(35, 17, 5, 0.55),
+              inset 0 -12px 14px -6px rgba(35, 17, 5, 0.55),
+              inset 8px 0 14px rgba(120, 75, 25, 0.18),
+              inset -8px 0 14px rgba(120, 75, 25, 0.18),
+              0 8px 25px rgba(0, 0, 0, 0.65);
+  border-left: 2px solid #a88248;
+  border-right: 2px solid #a88248;
+  overflow: hidden;
+  position: relative;
+  z-index: 4;
+  transition: max-height 0.75s cubic-bezier(0.2, 0.9, 0.3, 1), padding 0.5s ease;
+}
+
+/* Initial Sealed / Locked State */
+.realisticScroll.locked .parchmentSheet {
+  max-height: 48px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+}
+
+.sealedBand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  position: relative;
+}
+
+.sealRibbon {
+  position: absolute;
+  width: 100%;
+  height: 10px;
+  background: linear-gradient(180deg, #7c1515, #a32222);
+  border-top: 1px solid #d4a94b;
+  border-bottom: 1px solid #d4a94b;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.waxSeal {
+  position: relative;
+  z-index: 2;
+  background: radial-gradient(circle at 40% 35%, #b42b2b, #6b0f0f 75%);
+  border: 1.5px solid #d4a94b;
+  border-radius: 20px;
+  padding: 0.22rem 0.85rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+  animation: sealPulse 2.8s infinite ease-in-out;
+}
+
+@keyframes sealPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6); }
+  50% { transform: scale(1.04); box-shadow: 0 6px 14px rgba(212, 169, 75, 0.4); }
+}
+
+.sealCaption {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: #fff1c4;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.realisticScroll.locked .scrollMessageBody {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-12px);
+  max-height: 0;
+  overflow: hidden;
+}
+
+/* Unrolled State */
+.realisticScroll.unrolled .parchmentSheet {
+  max-height: 320px;
+  padding: 0.95rem 1.2rem 0.85rem 1.2rem;
+  cursor: default;
+}
+
+.realisticScroll.unrolled .sealedBand {
+  opacity: 0;
+  pointer-events: none;
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+  transition: opacity 0.3s ease;
+}
+
+.realisticScroll.unrolled .scrollMessageBody {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  max-height: 500px;
+  transition: opacity 0.45s ease 0.25s, transform 0.45s ease 0.25s;
+}
+
+/* Warm candlelight reflection on parchment when flame is lit */
+.realisticScroll.lit .parchmentSheet {
+  box-shadow: inset 0 12px 14px -6px rgba(35, 17, 5, 0.45),
+              inset 0 -12px 14px -6px rgba(35, 17, 5, 0.45),
+              inset 8px 0 14px rgba(120, 75, 25, 0.15),
+              inset -8px 0 14px rgba(120, 75, 25, 0.15),
+              0 10px 30px rgba(230, 120, 20, 0.35);
+  filter: drop-shadow(0 0 15px rgba(245, 160, 30, 0.28));
+}
+
+/* Parchment Text Details */
+.scrollTopOrnament {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #7a461b;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.25rem;
+  text-align: center;
+}
+
+.scrollSenderName {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 2vw, 1.15rem);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2e1403;
+  text-shadow: 0 1px 0 rgba(255, 245, 215, 0.7);
+  text-align: center;
+}
+
+.scrollMessageText {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(0.85rem, 1.8vw, 1.0rem);
+  line-height: 1.38;
+  color: #220d02;
+  max-width: 360px;
+  margin: 0.3rem auto 0.6rem auto;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 245, 215, 0.5);
+}
+
+.scrollControls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.scrollActionLink {
+  background: rgba(85, 40, 10, 0.12);
+  border: 1px solid rgba(135, 75, 20, 0.4);
+  color: #3b1703;
+  font-family: var(--font-serif);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.22rem 0.75rem;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scrollActionLink:hover {
+  background: rgba(85, 40, 10, 0.22);
+  border-color: #6a3406;
+}
+
+.scrollActionLink.primary {
+  background: rgba(145, 75, 15, 0.26);
+  border-color: #7e3e08;
+  color: #270c01;
+}
+
+.scrollActionLink.primary:hover {
+  background: rgba(175, 90, 20, 0.36);
+}
+
+.scrollActionLink.rollUp {
+  opacity: 0.7;
+}
+
+.scrollActionLink.rollUp:hover {
+  opacity: 1;
+}
+
+/* =============================================
+   CONTROLS BAR (BOTTOM BUTTON)
+   ============================================= */
+.controlsBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  margin-top: 0.2rem;
+}
+
+/* =============================================
+   FESTIVE GREETING MODAL DIALOG
+   ============================================= */
+.shareModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(10, 4, 1, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  pointer-events: auto;
+}
+
+.shareModalOverlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.shareModalCard {
+  background: linear-gradient(155deg, rgba(30, 15, 6, 0.95), rgba(16, 7, 2, 0.98));
+  border: 1px solid rgba(235, 175, 60, 0.4);
+  border-radius: 22px;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 235, 160, 0.25);
+  max-width: 460px;
+  width: 100%;
+  padding: 2rem 2rem 1.6rem 2rem;
+  position: relative;
+  color: #ffebc0;
+  transform: translateY(0);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.shareModalOverlay.hidden .shareModalCard {
+  transform: translateY(20px) scale(0.96);
+}
+
+.modalCloseBtn {
+  position: absolute;
+  top: 1rem;
+  right: 1.1rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e8c88c;
+  font-size: 0.85rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.modalHeader {
+  text-align: center;
+  margin-bottom: 1.3rem;
+}
+
+.modalHeader h2 {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #ffdf85;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.3rem;
+}
+
+.modalSubtitle {
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  color: rgba(245, 220, 160, 0.75);
+  line-height: 1.4;
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.formField label {
+  font-family: var(--font-serif);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #f5c842;
+  letter-spacing: 0.04em;
+}
+
+.formField input,
+.formField textarea {
+  background: rgba(14, 6, 2, 0.75);
+  border: 1px solid rgba(232, 168, 53, 0.3);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  color: #fff4d0;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.formField input:focus,
+.formField textarea:focus {
+  border-color: #f5c842;
+  background: rgba(22, 10, 3, 0.9);
+  box-shadow: 0 0 12px rgba(245, 200, 66, 0.3);
+}
+
+.formField textarea {
+  resize: none;
+  line-height: 1.4;
+}
+
+.presetsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.presetsLabel {
+  font-family: var(--font-serif);
+  font-size: 0.8rem;
+  color: rgba(245, 215, 140, 0.7);
+}
+
+.presetsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.presetChip {
+  background: rgba(55, 28, 10, 0.6);
+  border: 1px solid rgba(232, 168, 53, 0.25);
+  border-radius: 16px;
+  padding: 0.28rem 0.65rem;
+  font-family: var(--font-serif);
+  font-size: 0.78rem;
+  color: #ffdf90;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.presetChip:hover {
+  background: rgba(85, 42, 16, 0.85);
+  border-color: #f5c842;
+  color: #ffffff;
+}
+
+.modalActionsRow {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 0.3rem;
+}
+
+.modalBtn {
+  flex: 1;
+  padding: 0.7rem 0.85rem;
+  border-radius: 40px;
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(232, 168, 53, 0.35);
+  background: rgba(45, 22, 10, 0.7);
+  color: #ffdf90;
+}
+
+.modalBtn:hover {
+  transform: translateY(-2px);
+  border-color: #f5c842;
+  color: #ffffff;
+}
+
+.modalBtn.primary {
+  background: linear-gradient(135deg, #e8a835, #c97b20);
+  border: none;
+  color: #120602;
+  box-shadow: 0 4px 14px rgba(220, 120, 15, 0.4);
+}
+
+.modalBtn.primary:hover {
+  box-shadow: 0 6px 20px rgba(245, 160, 25, 0.6);
+}
+
+.modalBtn.whatsapp {
+  background: linear-gradient(135deg, #1fa855, #14703a);
+  border: none;
+  color: #ffffff;
+}
+
+.modalToast {
+  margin-top: 0.3rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(35, 130, 60, 0.25);
+  border: 1px solid rgba(40, 167, 69, 0.5);
+  color: #a3e9a4;
+  font-family: var(--font-serif);
+  font-size: 0.85rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.modalToast.hidden {
+  opacity: 0;
+  pointer-events: none;
+  max-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  overflow: hidden;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 600px) {
+  .stageContainer {
+    padding-top: 4.8rem;
+    gap: 0.8rem;
+  }
+  .realisticScroll {
+    width: 92vw;
+    margin-top: -0.8rem;
+  }
+  .scrollSenderName {
+    font-size: 0.9rem;
+  }
+  .scrollMessageText {
+    font-size: 0.82rem;
+    line-height: 1.3;
+  }
+  .shareModalCard {
+    padding: 1.6rem 1.2rem;
+    max-width: 94vw;
+  }
+  .modalActionsRow {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }

@@ -124,6 +124,7 @@ function init() {
   setupEvents();
   checkDeviceOrientation();
   initMusicPlayer();
+  initSharingFeature();
 
   // Draw initial unlit background
   drawBackground(0);
@@ -752,6 +753,8 @@ function ignite() {
   fadeInstruction();
   updateButtonUI();
 
+  if (realisticScroll) realisticScroll.classList.add('lit');
+
   // Auto-play ambient sacred music when flame gets lightened
   if (typeof playMusic === 'function' && !isMusicPlaying) {
     playMusic();
@@ -765,6 +768,8 @@ function extinguish() {
   state.igniting = false;
 
   updateButtonUI();
+
+  if (realisticScroll) realisticScroll.classList.remove('lit');
 
   // Turn off music when diya flame gets extinguished
   if (typeof pauseMusic === 'function' && isMusicPlaying) {
@@ -781,13 +786,11 @@ function toggleFlame() {
 }
 
 function updateButtonUI() {
-  if (!btnLabel || !btnIcon) return;
+  if (!btnLabel) return;
   if (state.lit) {
     btnLabel.textContent = 'Extinguish';
-    btnIcon.textContent = '✦';
   } else {
     btnLabel.textContent = 'Light Diya';
-    btnIcon.textContent = '✧';
   }
 }
 
@@ -1297,6 +1300,319 @@ function stopSynthDrone() {
     });
     synthOscillators = [];
   }, 400);
+}
+
+// =============================================
+// REALISTIC MANUSCRIPT SCROLL & SHARING
+// =============================================
+const realisticScroll   = document.getElementById('realisticScroll');
+const scrollLockedBand  = document.getElementById('scrollLockedBand');
+const scrollSenderName  = document.getElementById('scrollSenderName');
+const scrollMessageText = document.getElementById('scrollMessageText');
+const openCustomizeBtn  = document.getElementById('openCustomizeBtn');
+const openShareBtn      = document.getElementById('openShareBtn');
+const rollUpBtn         = document.getElementById('rollUpBtn');
+const shareModalOverlay = document.getElementById('shareModalOverlay');
+const closeModalBtn     = document.getElementById('closeModalBtn');
+const inputSenderName   = document.getElementById('inputSenderName');
+const inputMessageText  = document.getElementById('inputMessageText');
+const applyScrollBtn    = document.getElementById('applyScrollBtn');
+const copyShareLinkBtn  = document.getElementById('copyShareLinkBtn');
+const whatsappShareBtn  = document.getElementById('whatsappShareBtn');
+const modalToast        = document.getElementById('modalToast');
+const modalToastMsg     = document.getElementById('modalToastMsg');
+
+const DEFAULT_SCROLL_NAME = "With Sacred Blessings";
+const DEFAULT_SCROLL_MSG  = "May the divine light of this sacred diya illuminate your life with peace, health and prosperity.";
+
+let currentScrollName = DEFAULT_SCROLL_NAME;
+let currentScrollMsg  = DEFAULT_SCROLL_MSG;
+let toastTimeout = null;
+
+function initSharingFeature() {
+  if (!realisticScroll) return;
+
+  // 1. Read URL parameters (?name=...&msg=...) on page load
+  readUrlParameters();
+
+  // If page was loaded with a personalized shared link, unroll immediately
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('name') || params.has('msg')) {
+    unrollScroll();
+  } else {
+    lockScroll();
+  }
+
+  // 2. Tapping the locked scroll or sealed band unlocks & unrolls it
+  realisticScroll.addEventListener('click', (e) => {
+    if (e.target.closest('.scrollActionLink')) return;
+
+    if (realisticScroll.classList.contains('locked')) {
+      e.stopPropagation();
+      unrollScroll();
+    }
+  });
+
+  if (scrollLockedBand) {
+    scrollLockedBand.addEventListener('click', (e) => {
+      e.stopPropagation();
+      unrollScroll();
+    });
+  }
+
+  // 3. Roll up button
+  if (rollUpBtn) {
+    rollUpBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      lockScroll();
+    });
+  }
+
+  // 4. Customize button
+  if (openCustomizeBtn) {
+    openCustomizeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openShareModal();
+    });
+  }
+
+  // 5. Share button
+  if (openShareBtn) {
+    openShareBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openShareModal(true);
+    });
+  }
+
+  // 6. Modal close listeners
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeShareModal();
+    });
+  }
+
+  if (shareModalOverlay) {
+    shareModalOverlay.addEventListener('click', (e) => {
+      if (e.target === shareModalOverlay) {
+        closeShareModal();
+      }
+    });
+
+    const card = shareModalOverlay.querySelector('.shareModalCard');
+    if (card) {
+      card.addEventListener('click', (e) => e.stopPropagation());
+    }
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && shareModalOverlay && !shareModalOverlay.classList.contains('hidden')) {
+      closeShareModal();
+    }
+  });
+
+  // 7. Preset greeting chips
+  document.querySelectorAll('.presetChip').forEach(chip => {
+    chip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const msg = chip.getAttribute('data-msg');
+      if (msg && inputMessageText) {
+        inputMessageText.value = msg;
+        inputMessageText.focus();
+      }
+    });
+  });
+
+  // 8. Apply button
+  if (applyScrollBtn) {
+    applyScrollBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      commitModalInputs();
+      showModalToast('Scroll updated.');
+      setTimeout(closeShareModal, 800);
+    });
+  }
+
+  // 9. Copy Link button
+  if (copyShareLinkBtn) {
+    copyShareLinkBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      commitModalInputs();
+      copyShareLink();
+    });
+  }
+
+  // 10. WhatsApp Share button
+  if (whatsappShareBtn) {
+    whatsappShareBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      commitModalInputs();
+      shareOnWhatsApp();
+    });
+  }
+}
+
+function unrollScroll() {
+  if (!realisticScroll) return;
+  realisticScroll.classList.remove('locked');
+  realisticScroll.classList.add('unrolled');
+  if (navigator.vibrate) {
+    try { navigator.vibrate(25); } catch(e) {}
+  }
+}
+
+function lockScroll() {
+  if (!realisticScroll) return;
+  realisticScroll.classList.remove('unrolled');
+  realisticScroll.classList.add('locked');
+}
+
+function readUrlParameters() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const nameParam = params.get('name');
+    const msgParam  = params.get('msg');
+
+    if (nameParam && nameParam.trim()) {
+      currentScrollName = nameParam.trim();
+    }
+    if (msgParam && msgParam.trim()) {
+      currentScrollMsg = msgParam.trim();
+    }
+  } catch (err) {
+    console.warn('URL param parse error:', err);
+  }
+
+  updateScrollDisplay();
+}
+
+function updateScrollDisplay() {
+  if (scrollSenderName) {
+    scrollSenderName.textContent = currentScrollName;
+  }
+  if (scrollMessageText) {
+    scrollMessageText.textContent = currentScrollMsg;
+  }
+}
+
+function openShareModal(focusShare = false) {
+  if (!shareModalOverlay) return;
+
+  if (inputSenderName) {
+    inputSenderName.value = (currentScrollName === DEFAULT_SCROLL_NAME) ? '' : currentScrollName;
+    if (!focusShare) inputSenderName.focus();
+  }
+  if (inputMessageText) {
+    inputMessageText.value = (currentScrollMsg === DEFAULT_SCROLL_MSG) ? '' : currentScrollMsg;
+  }
+
+  hideModalToast();
+  shareModalOverlay.classList.remove('hidden');
+
+  if (focusShare && copyShareLinkBtn) {
+    copyShareLinkBtn.focus();
+  }
+}
+
+function closeShareModal() {
+  if (!shareModalOverlay) return;
+  shareModalOverlay.classList.add('hidden');
+}
+
+function commitModalInputs() {
+  const nameVal = inputSenderName ? inputSenderName.value.trim() : '';
+  const msgVal  = inputMessageText ? inputMessageText.value.trim() : '';
+
+  currentScrollName = nameVal ? nameVal : DEFAULT_SCROLL_NAME;
+  currentScrollMsg  = msgVal ? msgVal : DEFAULT_SCROLL_MSG;
+
+  updateScrollDisplay();
+
+  try {
+    const shareUrl = buildShareUrl();
+    window.history.replaceState({}, '', shareUrl);
+  } catch (e) {}
+}
+
+function buildShareUrl() {
+  const url = new URL(window.location.origin + window.location.pathname);
+  if (currentScrollName && currentScrollName !== DEFAULT_SCROLL_NAME) {
+    url.searchParams.set('name', currentScrollName);
+  }
+  if (currentScrollMsg && currentScrollMsg !== DEFAULT_SCROLL_MSG) {
+    url.searchParams.set('msg', currentScrollMsg);
+  }
+  return url.toString();
+}
+
+function copyShareLink() {
+  const shareUrl = buildShareUrl();
+
+  if (navigator.share && window.innerWidth <= 768) {
+    navigator.share({
+      title: 'Sacred Diya',
+      text: `${currentScrollName} shares a festive blessing: "${currentScrollMsg}"\n`,
+      url: shareUrl,
+    }).then(() => {
+      showModalToast('Shared successfully.');
+    }).catch((err) => {
+      if (err.name !== 'AbortError') {
+        fallbackClipboardCopy(shareUrl);
+      }
+    });
+    return;
+  }
+
+  fallbackClipboardCopy(shareUrl);
+}
+
+function fallbackClipboardCopy(shareUrl) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showModalToast('Link copied to clipboard.');
+    }).catch(() => {
+      execCommandCopy(shareUrl);
+    });
+  } else {
+    execCommandCopy(shareUrl);
+  }
+}
+
+function execCommandCopy(text) {
+  const temp = document.createElement('textarea');
+  temp.value = text;
+  temp.style.position = 'fixed';
+  temp.style.opacity = '0';
+  document.body.appendChild(temp);
+  temp.focus();
+  temp.select();
+  try {
+    document.execCommand('copy');
+    showModalToast('Link copied to clipboard.');
+  } catch (e) {
+    prompt('Copy your link:', text);
+  }
+  document.body.removeChild(temp);
+}
+
+function shareOnWhatsApp() {
+  const shareUrl = buildShareUrl();
+  const text = `Sacred Diya from ${currentScrollName}:\n\n"${currentScrollMsg}"\n\nTap to light the diya:\n${shareUrl}`;
+  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+  window.open(waUrl, '_blank');
+  showModalToast('Opening WhatsApp.');
+}
+
+function showModalToast(message) {
+  if (!modalToast) return;
+  clearTimeout(toastTimeout);
+  if (modalToastMsg) modalToastMsg.textContent = message;
+  modalToast.classList.remove('hidden');
+  toastTimeout = setTimeout(hideModalToast, 4000);
+}
+
+function hideModalToast() {
+  if (modalToast) modalToast.classList.add('hidden');
 }
 
 // Start
