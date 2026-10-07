@@ -198,6 +198,34 @@
 
     <!-- Elegant UI Controls & Instructions -->
     <div id="ui">
+      <!-- Glassmorphic Ambient Music Player (Top Corner) -->
+      <div id="musicWidget" class="glassMusicWidget" aria-label="Sacred Music Player">
+        <audio id="bgAudio" preload="auto"></audio>
+        
+        <button id="musicToggleBtn" class="musicPlayBtn" title="Play / Pause Ambient Music" aria-label="Toggle Music">
+          <span id="musicPlayIcon">▶</span>
+        </button>
+
+        <div class="musicTrackDetails">
+          <div class="musicTrackHeader">
+            <span class="musicNoteIcon">♫</span>
+            <span id="musicTrackName" class="musicTrackName">1.mp3 — Divine Flute</span>
+          </div>
+          <!-- Animated Sound Equalizer Waves -->
+          <div id="equalizerWave" class="equalizerWave paused">
+            <span class="eqBar"></span>
+            <span class="eqBar"></span>
+            <span class="eqBar"></span>
+            <span class="eqBar"></span>
+          </div>
+        </div>
+
+        <div class="musicNavControls">
+          <button id="prevTrackBtn" class="musicMiniBtn" title="Previous Track" aria-label="Previous Track">⏮</button>
+          <button id="nextTrackBtn" class="musicMiniBtn" title="Next Track" aria-label="Next Track">⏭</button>
+        </div>
+      </div>
+
       <div id="instruction" class="instruction">
         <span id="instructionText">Tap the diya to light the flame</span>
       </div>

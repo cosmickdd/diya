@@ -123,6 +123,7 @@ function init() {
 
   setupEvents();
   checkDeviceOrientation();
+  initMusicPlayer();
 
   // Draw initial unlit background
   drawBackground(0);
@@ -753,6 +754,11 @@ function ignite() {
   spawnRipple(CX, 465);
   fadeInstruction();
   updateButtonUI();
+
+  // Auto-play ambient sacred music when flame gets lightened
+  if (typeof playMusic === 'function' && !isMusicPlaying) {
+    playMusic();
+  }
 }
 
 function extinguish() {
@@ -1059,6 +1065,233 @@ window.addEventListener('keydown', (e) => {
     flameScale.impulse(-0.15);
   }
 });
+
+// =============================================
+// AMBIENT MUSIC PLAYER (GLASSMORPHIC WIDGET)
+// =============================================
+const bgAudio        = document.getElementById('bgAudio');
+const musicWidget    = document.getElementById('musicWidget');
+const musicToggleBtn = document.getElementById('musicToggleBtn');
+const musicPlayIcon  = document.getElementById('musicPlayIcon');
+const musicTrackName = document.getElementById('musicTrackName');
+const equalizerWave  = document.getElementById('equalizerWave');
+const prevTrackBtn   = document.getElementById('prevTrackBtn');
+const nextTrackBtn   = document.getElementById('nextTrackBtn');
+
+// Tracks configured for audio/ folder (.1.mp3, 1.mp3, 2.mp3, 3.mp3)
+const TRACKS = [
+  { id: 1, name: '1.mp3 — Divine Classical Flute', src: 'audio/1.mp3', alt: 'audio/.1.mp3' },
+  { id: 2, name: '2.mp3 — Festive Temple Santoor', src: 'audio/2.mp3', alt: 'audio/.2.mp3' },
+  { id: 3, name: '3.mp3 — Sacred Raag & Tanpura', src: 'audio/3.mp3', alt: 'audio/.3.mp3' },
+];
+
+let currentTrackIdx = 0;
+let isMusicPlaying = false;
+let currentAttemptAlt = false;
+let userGestureArmed = false;
+let synthAudioCtx = null;
+let synthGainNode = null;
+let synthOscillators = [];
+
+function initMusicPlayer() {
+  if (!bgAudio || !musicToggleBtn) return;
+
+  bgAudio.volume = 0.68;
+  loadTrack(0, false);
+
+  musicToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleMusic();
+  });
+
+  if (prevTrackBtn) {
+    prevTrackBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      prevTrack();
+    });
+  }
+
+  if (nextTrackBtn) {
+    nextTrackBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      nextTrack();
+    });
+  }
+
+  bgAudio.addEventListener('ended', () => {
+    nextTrack();
+  });
+
+  bgAudio.addEventListener('error', () => {
+    const track = TRACKS[currentTrackIdx];
+    // If 1.mp3 failed, check alternative dotted name (.1.mp3)
+    if (!currentAttemptAlt && track && track.alt) {
+      currentAttemptAlt = true;
+      bgAudio.src = track.alt;
+      bgAudio.load();
+      if (isMusicPlaying) {
+        bgAudio.play().catch(activateSynthFallback);
+      }
+    } else if (isMusicPlaying) {
+      activateSynthFallback();
+    }
+  });
+}
+
+function loadTrack(idx, autoPlay = true) {
+  currentTrackIdx = (idx + TRACKS.length) % TRACKS.length;
+  currentAttemptAlt = false;
+  const track = TRACKS[currentTrackIdx];
+
+  if (musicTrackName) {
+    musicTrackName.textContent = track.name;
+    musicTrackName.title = track.name;
+  }
+
+  stopSynthDrone();
+  bgAudio.src = track.src;
+  bgAudio.load();
+
+  if (autoPlay && isMusicPlaying) {
+    bgAudio.play().then(() => {
+      stopSynthDrone();
+    }).catch((err) => {
+      if (err && err.name === 'NotAllowedError') {
+        armUserGestureAutoplay();
+      } else {
+        activateSynthFallback();
+      }
+    });
+  }
+}
+
+function toggleMusic() {
+  if (isMusicPlaying) {
+    pauseMusic();
+  } else {
+    playMusic();
+  }
+}
+
+function playMusic() {
+  isMusicPlaying = true;
+  if (musicPlayIcon) musicPlayIcon.textContent = '⏸';
+  if (equalizerWave) equalizerWave.classList.remove('paused');
+
+  bgAudio.play().then(() => {
+    stopSynthDrone();
+  }).catch((err) => {
+    // If browser blocks autoplay before user gesture: arm unlock on first tap
+    if (err && err.name === 'NotAllowedError') {
+      armUserGestureAutoplay();
+    } else {
+      // If audio file is missing or still uploading, start soothing synth fallback
+      activateSynthFallback();
+    }
+  });
+}
+
+function armUserGestureAutoplay() {
+  if (userGestureArmed) return;
+  userGestureArmed = true;
+
+  const onFirstInteract = () => {
+    window.removeEventListener('pointerdown', onFirstInteract);
+    window.removeEventListener('click', onFirstInteract);
+    window.removeEventListener('keydown', onFirstInteract);
+    window.removeEventListener('touchstart', onFirstInteract);
+    userGestureArmed = false;
+
+    if (isMusicPlaying && state.lit) {
+      bgAudio.play().then(() => {
+        stopSynthDrone();
+      }).catch(activateSynthFallback);
+    }
+  };
+
+  window.addEventListener('pointerdown', onFirstInteract, { once: true });
+  window.addEventListener('click', onFirstInteract, { once: true });
+  window.addEventListener('keydown', onFirstInteract, { once: true });
+  window.addEventListener('touchstart', onFirstInteract, { once: true });
+}
+
+function pauseMusic() {
+  isMusicPlaying = false;
+  if (musicPlayIcon) musicPlayIcon.textContent = '▶';
+  if (equalizerWave) equalizerWave.classList.add('paused');
+
+  bgAudio.pause();
+  stopSynthDrone();
+}
+
+function nextTrack() {
+  loadTrack(currentTrackIdx + 1, true);
+}
+
+function prevTrack() {
+  loadTrack(currentTrackIdx - 1, true);
+}
+
+// Built-in Meditative Indian Tanpura Drone (Sa-Pa C# resonance)
+function activateSynthFallback() {
+  if (!isMusicPlaying) return;
+  startSynthDrone();
+}
+
+function startSynthDrone() {
+  try {
+    if (!synthAudioCtx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      synthAudioCtx = new AudioCtx();
+    }
+
+    if (synthAudioCtx.state === 'suspended') {
+      synthAudioCtx.resume();
+    }
+
+    stopSynthDrone();
+
+    // Fundamental Sa = C#3 (138.59 Hz), Pa = G#3 (207.65 Hz), High Sa = C#4 (277.18 Hz)
+    const freqs = [138.59, 207.65, 277.18, 415.30];
+    synthGainNode = synthAudioCtx.createGain();
+    synthGainNode.gain.setValueAtTime(0.001, synthAudioCtx.currentTime);
+    synthGainNode.gain.linearRampToValueAtTime(0.08, synthAudioCtx.currentTime + 1.2);
+
+    const filter = synthAudioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(560, synthAudioCtx.currentTime);
+    filter.Q.setValueAtTime(3.2, synthAudioCtx.currentTime);
+
+    synthGainNode.connect(filter);
+    filter.connect(synthAudioCtx.destination);
+
+    synthOscillators = freqs.map((f, i) => {
+      const osc = synthAudioCtx.createOscillator();
+      osc.type = i % 2 === 0 ? 'sawtooth' : 'sine';
+      osc.frequency.setValueAtTime(f + (Math.random() - 0.5) * 0.4, synthAudioCtx.currentTime);
+      osc.connect(synthGainNode);
+      osc.start();
+      return osc;
+    });
+  } catch (err) {
+    console.warn('Synth drone note:', err);
+  }
+}
+
+function stopSynthDrone() {
+  if (synthGainNode && synthAudioCtx) {
+    try {
+      synthGainNode.gain.linearRampToValueAtTime(0.0001, synthAudioCtx.currentTime + 0.4);
+    } catch (e) {}
+  }
+  setTimeout(() => {
+    synthOscillators.forEach(osc => {
+      try { osc.stop(); osc.disconnect(); } catch (e) {}
+    });
+    synthOscillators = [];
+  }, 400);
+}
 
 // Start
 window.addEventListener('DOMContentLoaded', init);
