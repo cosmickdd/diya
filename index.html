@@ -102,6 +102,15 @@
             <stop offset="100%" stop-color="rgba(180, 20, 0, 0)" />
           </radialGradient>
 
+          <!-- Finger Burn Hotspot Gradient -->
+          <radialGradient id="burnHotSpotGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffffff" />
+            <stop offset="25%" stop-color="#fffb90" />
+            <stop offset="55%" stop-color="#ff8c10" />
+            <stop offset="85%" stop-color="#e02800" />
+            <stop offset="100%" stop-color="rgba(180, 20, 0, 0)" />
+          </radialGradient>
+
           <!-- Filters -->
           <filter id="auraBlur" x="-100%" y="-100%" width="300%" height="300%">
             <feGaussianBlur stdDeviation="35" />
@@ -118,6 +127,11 @@
           <filter id="emberGlow" x="-200%" y="-200%" width="500%" height="500%">
             <feGaussianBlur stdDeviation="3.5" result="blur"/>
             <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+          </filter>
+
+          <filter id="burnSparkFilter" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
         </defs>
 
@@ -166,10 +180,18 @@
           <path id="hotCore" fill="url(#hotCoreGrad)" />
         </g>
 
-        <!-- 7. Floating Ember Particles -->
+        <!-- 7. Finger Burning Contact Effect (Sizzling Hot Spot directly under finger) -->
+        <g id="burnEffectGroup" opacity="0" pointer-events="none">
+          <circle id="burnGlow" cx="0" cy="0" r="54" fill="url(#burnHotSpotGrad)" filter="url(#sheathBlur)" />
+          <ellipse id="burnRing" cx="0" cy="0" rx="44" ry="24" fill="none" stroke="#fff480" stroke-width="2.5" />
+          <ellipse id="burnRing2" cx="0" cy="0" rx="26" ry="14" fill="none" stroke="#ffffff" stroke-width="2" />
+          <circle id="burnCore" cx="0" cy="0" r="16" fill="#ffffff" filter="url(#burnSparkFilter)" />
+        </g>
+
+        <!-- 8. Floating Ember Particles -->
         <g id="emberGroup"></g>
 
-        <!-- 8. Smoke Particles -->
+        <!-- 9. Smoke Particles -->
         <g id="smokeGroup"></g>
       </svg>
     </div><!-- /diyaScene -->

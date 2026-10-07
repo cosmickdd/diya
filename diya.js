@@ -39,6 +39,11 @@ const innerPetalSheen  = document.getElementById('innerPetalSheen');
 const hotCore          = document.getElementById('hotCore');
 const emberGroup       = document.getElementById('emberGroup');
 const smokeGroup       = document.getElementById('smokeGroup');
+const burnEffectGroup  = document.getElementById('burnEffectGroup');
+const burnGlow         = document.getElementById('burnGlow');
+const burnRing         = document.getElementById('burnRing');
+const burnRing2        = document.getElementById('burnRing2');
+const burnCore         = document.getElementById('burnCore');
 
 // Canvas Context
 let bgCtx = null;
@@ -85,6 +90,19 @@ const smokeIntens = new Spring(6, 0.88, 0);
 const noiseSway    = new SmoothNoise(12);
 const noiseFlicker = new SmoothNoise(48);
 const noiseBreathe = new SmoothNoise(99);
+
+// Touch Burn State (When user touches the flame)
+const touchBurn = {
+  active: false,
+  x: CX,
+  y: FLAME_BASE_Y - 220,
+  intensity: 0,
+  targetIntensity: 0,
+  hapticCooldown: 0,
+  smokeTimer: 0,
+  sparkTimer: 0,
+  durationOnFlame: 0,
+};
 
 // Particles
 let embers = [];
@@ -253,7 +271,111 @@ function loop(timestamp) {
   // Always update smoke (especially during extinguish)
   updateSmoke(t, dt, totalLean);
 
+  // Update Touch Burning Effect (Sizzling finger contact)
+  touchBurn.intensity += (touchBurn.targetIntensity - touchBurn.intensity) * Math.min(1, dt * 16);
+  if (touchBurn.active && state.lit) {
+    touchBurn.durationOnFlame += dt;
+    // Sizzling sparks
+    touchBurn.sparkTimer += dt;
+    if (touchBurn.sparkTimer > 0.05) {
+      spawnBurnSpark(touchBurn.x, touchBurn.y);
+      touchBurn.sparkTimer = 0;
+    }
+    // Singe smoke wisps
+    touchBurn.smokeTimer += dt;
+    if (touchBurn.smokeTimer > 0.16) {
+      spawnBurnSmoke(touchBurn.x, touchBurn.y);
+      touchBurn.smokeTimer = 0;
+    }
+    // Micro-flicker vibration on flame
+    flameLeanX.impulse((Math.random() - 0.5) * 4);
+    // Haptic buzz on mobile
+    if (navigator.vibrate) {
+      touchBurn.hapticCooldown -= dt;
+      if (touchBurn.hapticCooldown <= 0) {
+        navigator.vibrate([16, 12, 14]);
+        touchBurn.hapticCooldown = 0.08;
+      }
+    }
+    if (touchBurn.durationOnFlame > 0.5 && touchBurn.durationOnFlame < 0.6) {
+      showInstruction('Careful! The flame is scorching hot! 🔥', 2500);
+    }
+  } else {
+    touchBurn.durationOnFlame = 0;
+  }
+
   requestAnimationFrame(loop);
+}
+
+// =============================================
+// COORDINATE MAPPING & FLAME HIT DETECTION
+// =============================================
+function getSvgCoords(clientX, clientY) {
+  const rect = diyaScene.getBoundingClientRect();
+  if (!rect.width || !rect.height) return { x: CX, y: FLAME_BASE_Y };
+  const x = ((clientX - rect.left) / rect.width) * 1536;
+  const y = ((clientY - rect.top) / rect.height) * 1024;
+  return { x, y };
+}
+
+function checkFlameHit(svgX, svgY) {
+  if (!state.lit || flameScale.current < 0.22) return false;
+  const h = FLAME_NATURAL_H * flameScale.current;
+  const by = FLAME_BASE_Y;
+  const tipY = by - h;
+
+  // Vertical bounds of flame
+  if (svgY < tipY - 45 || svgY > by + 25) return false;
+
+  const u = Math.max(0, Math.min(1, (by - svgY) / h));
+  const leanRad = (flameLeanX.current * Math.PI) / 180;
+  const spineX = CX + h * Math.pow(u, 1.4) * Math.sin(leanRad);
+
+  const bw = FLAME_BELLY_W * flameScale.current;
+  const baseW = 42 * flameScale.current;
+  const halfW = Math.max(28, bw * Math.sin(Math.pow(u, 0.7) * Math.PI) + baseW * (1 - u) * 0.7);
+
+  // Finger contact tolerance (within 52px of outer edge)
+  return Math.abs(svgX - spineX) <= (halfW + 52);
+}
+
+function spawnBurnSpark(x, y) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  el.setAttribute('filter', 'url(#burnSparkFilter)');
+  el.setAttribute('fill', Math.random() > 0.35 ? '#ffffff' : '#ffd030');
+  const r = 2.2 + Math.random() * 2.8;
+  el.setAttribute('r', r.toString());
+  emberGroup.appendChild(el);
+  embers.push({
+    el,
+    x: x + (Math.random() - 0.5) * 22,
+    y: y + (Math.random() - 0.5) * 16,
+    vx: (Math.random() - 0.5) * 180,
+    vy: -(80 + Math.random() * 120),
+    age: 0,
+    lifetime: 0.55 + Math.random() * 0.45,
+  });
+}
+
+function spawnBurnSmoke(x, y) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  el.setAttribute('fill', 'rgba(65, 38, 20, 0.58)');
+  el.setAttribute('filter', 'url(#oilBlur)');
+  const r = 3.5 + Math.random() * 3.5;
+  el.setAttribute('r', r.toString());
+  smokeGroup.appendChild(el);
+  smokes.push({
+    el,
+    x: x + (Math.random() - 0.5) * 12,
+    y: y + (Math.random() - 0.5) * 8,
+    vx: (Math.random() - 0.5) * 30,
+    vy: -(48 + Math.random() * 60),
+    radius: r,
+    age: 0,
+    lifetime: 1.8 + Math.random() * 0.9,
+    intensity: 1.0,
+    seed: Math.random() * 10,
+  });
 }
 
 // =============================================
@@ -293,8 +415,16 @@ function renderFlame(t, scale, lean, bright) {
   // 1. MAIN TEARDROP PATH BUILDER
   // Creates the iconic smooth teardrop with concave neck tapering to a sharp point
   function buildTeardropPath(widthMultiplier, yOffset, tipExtra) {
-    const wBelly = bw * widthMultiplier;
-    const wBase  = baseW * widthMultiplier;
+    let wBelly = bw * widthMultiplier;
+    let wBase  = baseW * widthMultiplier;
+
+    // Physical reaction: flame flares out around the user's finger!
+    if (touchBurn.intensity > 0.01) {
+      const distFromTouchY = Math.abs(bellyY - touchBurn.y);
+      const bulge = Math.exp(-Math.pow(distFromTouchY / 85, 2)) * 54 * touchBurn.intensity;
+      wBelly += bulge;
+    }
+
     const bLX = bx - wBelly + leanBelly;
     const bRX = bx + wBelly + leanBelly;
     const yo  = yOffset || 0;
@@ -421,6 +551,19 @@ function renderFlame(t, scale, lean, bright) {
   const emberRadius = Math.max(0, 11 * scale * (0.85 + Math.sin(t * 8) * 0.15));
   wickEmber.setAttribute('r', emberRadius.toString());
   wickEmber.setAttribute('opacity', (0.95 * bright).toString());
+
+  // --- Layer 8: Sizzling Burn Contact Hotspot (Directly under finger) ---
+  if (touchBurn.intensity > 0.02) {
+    burnEffectGroup.setAttribute('transform', `translate(${touchBurn.x}, ${touchBurn.y})`);
+    burnEffectGroup.setAttribute('opacity', (Math.min(1.0, touchBurn.intensity * 1.15)).toString());
+    const sizzle1 = Math.sin(t * 38) * 35;
+    const sizzle2 = -Math.cos(t * 44) * 45;
+    burnRing.setAttribute('transform', `rotate(${sizzle1}) scale(${1 + Math.sin(t * 26) * 0.18})`);
+    burnRing2.setAttribute('transform', `rotate(${sizzle2}) scale(${1 + Math.cos(t * 32) * 0.22})`);
+    burnCore.setAttribute('r', (14 + Math.sin(t * 40) * 3.5).toString());
+  } else {
+    burnEffectGroup.setAttribute('opacity', '0');
+  }
 }
 
 // =============================================
@@ -697,7 +840,28 @@ function setupEvents() {
     if (state.hasDeviceOrientation) return;
     const normX = (e.clientX - window.innerWidth * 0.5) / (window.innerWidth * 0.5);
     windX.setTarget(normX * 28);
+    // Also check burn hover on desktop
+    updatePointerBurn(e.clientX, e.clientY);
   });
+
+  function updatePointerBurn(clientX, clientY) {
+    if (!state.lit) {
+      touchBurn.active = false;
+      touchBurn.targetIntensity = 0;
+      return;
+    }
+    const coords = getSvgCoords(clientX, clientY);
+    const hit = checkFlameHit(coords.x, coords.y);
+    if (hit) {
+      touchBurn.active = true;
+      touchBurn.targetIntensity = 1.0;
+      touchBurn.x = coords.x;
+      touchBurn.y = coords.y;
+    } else {
+      touchBurn.active = false;
+      touchBurn.targetIntensity = 0;
+    }
+  }
 
   // Swipe / Drag to lean or blow out flame
   window.addEventListener('pointerdown', (e) => {
@@ -707,9 +871,11 @@ function setupEvents() {
     state.pointerPrevX = e.clientX;
     state.pointerPrevY = e.clientY;
     state.swipeHistory = [{ x: e.clientX, t: Date.now() }];
+    updatePointerBurn(e.clientX, e.clientY);
   });
 
   window.addEventListener('pointermove', (e) => {
+    updatePointerBurn(e.clientX, e.clientY);
     if (!state.pointerDown) return;
     const dx = e.clientX - state.pointerPrevX;
     state.pointerPrevX = e.clientX;
@@ -724,9 +890,11 @@ function setupEvents() {
     }
   });
 
-  window.addEventListener('pointerup', () => {
+  function onPointerEnd() {
     if (!state.pointerDown) return;
     state.pointerDown = false;
+    touchBurn.active = false;
+    touchBurn.targetIntensity = 0;
 
     // Detect fast horizontal swipe across screen -> Blow out flame!
     if (state.swipeHistory.length >= 3 && state.lit) {
@@ -741,7 +909,11 @@ function setupEvents() {
         extinguish();
       }
     }
-  });
+  }
+
+  window.addEventListener('pointerup', onPointerEnd);
+  window.addEventListener('pointercancel', onPointerEnd);
+  window.addEventListener('pointerleave', onPointerEnd);
 
   if (enableMotionBtn) {
     enableMotionBtn.addEventListener('click', requestMotionPermission);
